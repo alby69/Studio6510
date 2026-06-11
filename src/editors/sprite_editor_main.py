@@ -1,7 +1,8 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QComboBox, QLabel
-from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
+from PySide6.QtCore import QTimer, Qt
 from editors.sprite_editor import SpriteEditor
 from models.sprite import Sprite
+from ui.widgets.palette_widget import PaletteWidget
 
 class SpriteEditorMain(QWidget):
     def __init__(self, sprite_model=None):
@@ -15,12 +16,10 @@ class SpriteEditorMain(QWidget):
         # Toolbar
         toolbar = QHBoxLayout()
 
-        self.color_sel = QComboBox()
-        for i in range(16):
-            self.color_sel.addItem(f"Color {i}")
-        self.color_sel.currentIndexChanged.connect(self._color_changed)
+        self.palette = PaletteWidget()
+        self.palette.colorSelected.connect(self._color_changed)
         toolbar.addWidget(QLabel("Pen:"))
-        toolbar.addWidget(self.color_sel)
+        toolbar.addWidget(self.palette)
 
         self.mc_btn = QPushButton("Multicolor: OFF")
         self.mc_btn.setCheckable(True)
@@ -42,12 +41,17 @@ class SpriteEditorMain(QWidget):
 
         # Preview Area
         preview_layout = QVBoxLayout()
-        self.anim_label = QLabel("Animation Preview")
-        preview_layout.addWidget(self.anim_label)
+        self.preview_label = QLabel("Preview")
+        preview_layout.addWidget(self.preview_label)
 
-        self.play_btn = QPushButton("Play")
-        self.play_btn.setCheckable(True)
-        self.play_btn.clicked.connect(self._toggle_animation)
+        from PySide6.QtGui import QPixmap, QImage, QPainter
+        self.preview_view = QLabel()
+        self.preview_view.setFixedSize(24*2, 21*2) # 2x zoom
+        self.preview_view.setStyleSheet("background-color: black; border: 1px solid gray;")
+        preview_layout.addWidget(self.preview_view)
+
+        self.play_btn = QPushButton("Animate (N/A)")
+        self.play_btn.setEnabled(False)
         preview_layout.addWidget(self.play_btn)
 
         preview_layout.addStretch()
@@ -55,12 +59,30 @@ class SpriteEditorMain(QWidget):
 
         layout.addLayout(content_layout)
 
-        # Animation Timer
-        self.anim_timer = QTimer()
-        # self.anim_timer.timeout.connect(self._next_frame)
+        self.pixel_editor.pixelChanged.connect(self._update_preview)
+        self._update_preview()
+
+    def _update_preview(self):
+        from PySide6.QtGui import QPixmap, QImage, QColor
+        from editors.sprite_editor import C64_PALETTE
+
+        img = QImage(24, 21, QImage.Format_RGB32)
+        for y in range(21):
+            for x in range(24):
+                color_idx = self.sprite.get_pixel(x, y)
+                if self.sprite.multicolor:
+                    # Basic MC preview logic
+                    color_idx = self.sprite.colors[color_idx % 4]
+                else:
+                    color_idx = self.sprite.colors[color_idx % 2]
+
+                img.setPixelColor(x, y, QColor(C64_PALETTE[color_idx]))
+
+        pixmap = QPixmap.fromImage(img).scaled(48, 42, Qt.KeepAspectRatio)
+        self.preview_view.setPixmap(pixmap)
 
     def _color_changed(self, index):
-        self.pixel_editor.current_color = 1 # Simplified
+        self.pixel_editor.current_color = index
 
     def _toggle_mc(self, checked):
         self.sprite.multicolor = checked

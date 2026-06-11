@@ -34,3 +34,12 @@ class Charset:
                 for col in range(8):
                     pixel_val = 1 if (byte_val & (1 << (7 - col))) else 0
                     self.chars[i][row * 8 + col] = pixel_val
+
+    def to_asm(self):
+        data = self.to_bytes()
+        asm = "; Charset Data\n"
+        for i in range(0, len(data), 8):
+            row_data = data[i:i+8]
+            bytes_str = ", ".join([f"${b:02x}" for b in row_data])
+            asm += f"    .byte {bytes_str}\n"
+        return asm

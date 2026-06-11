@@ -34,6 +34,11 @@ class CharsetEditor(QWidget):
         export_btn = QPushButton("Export Binary")
         export_btn.clicked.connect(self._export_bin)
         btns.addWidget(export_btn)
+
+        export_asm_btn = QPushButton("Export ASM")
+        export_asm_btn.clicked.connect(self._export_asm)
+        btns.addWidget(export_asm_btn)
+
         edit_layout.addLayout(btns)
 
         layout.addLayout(edit_layout, 2)
@@ -60,3 +65,9 @@ class CharsetEditor(QWidget):
                 data = f.read()
                 self.charset.from_bytes(data)
             self._char_selected(self.current_char_index)
+
+    def _export_asm(self):
+        path, _ = QFileDialog.getSaveFileName(self, "Export Charset ASM", "", "Assembly Files (*.asm *.txt)")
+        if path:
+            with open(path, 'w') as f:
+                f.write(self.charset.to_asm())
