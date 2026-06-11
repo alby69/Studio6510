@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QComboBox, QLabel
+from PySide6.QtCore import QTimer
 from editors.sprite_editor import SpriteEditor
 from models.sprite import Sprite
 
@@ -32,17 +33,44 @@ class SpriteEditorMain(QWidget):
 
         layout.addLayout(toolbar)
 
+        # Main Content (Editor + Preview)
+        content_layout = QHBoxLayout()
+
         # The Editor
         self.pixel_editor = SpriteEditor(self.sprite)
-        layout.addWidget(self.pixel_editor)
+        content_layout.addWidget(self.pixel_editor)
+
+        # Preview Area
+        preview_layout = QVBoxLayout()
+        self.anim_label = QLabel("Animation Preview")
+        preview_layout.addWidget(self.anim_label)
+
+        self.play_btn = QPushButton("Play")
+        self.play_btn.setCheckable(True)
+        self.play_btn.clicked.connect(self._toggle_animation)
+        preview_layout.addWidget(self.play_btn)
+
+        preview_layout.addStretch()
+        content_layout.addLayout(preview_layout)
+
+        layout.addLayout(content_layout)
+
+        # Animation Timer
+        self.anim_timer = QTimer()
+        # self.anim_timer.timeout.connect(self._next_frame)
 
     def _color_changed(self, index):
-        self.pixel_editor.current_color = 1 # Simplified, index should map to sprite colors
+        self.pixel_editor.current_color = 1 # Simplified
 
     def _toggle_mc(self, checked):
         self.sprite.multicolor = checked
         self.mc_btn.setText(f"Multicolor: {'ON' if checked else 'OFF'}")
-        # Update editor view...
+
+    def _toggle_animation(self, checked):
+        if checked:
+            self.anim_timer.start(100) # 10 FPS
+        else:
+            self.anim_timer.stop()
 
     def _export_asm(self):
         print(self.sprite.to_asm())

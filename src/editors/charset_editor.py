@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel, QFileDialog
 from ui.widgets.pixel_editor import PixelEditor
 from models.charset import Charset
 
@@ -27,8 +27,12 @@ class CharsetEditor(QWidget):
         edit_layout.addWidget(self.pixel_editor)
 
         btns = QHBoxLayout()
+        import_btn = QPushButton("Import Binary")
+        import_btn.clicked.connect(self._import_bin)
+        btns.addWidget(import_btn)
+
         export_btn = QPushButton("Export Binary")
-        # export_btn.clicked.connect(self._export_bin)
+        export_btn.clicked.connect(self._export_bin)
         btns.addWidget(export_btn)
         edit_layout.addLayout(btns)
 
@@ -42,3 +46,17 @@ class CharsetEditor(QWidget):
 
     def _pixel_changed(self, x, y, val):
         self.charset.set_pixel(self.current_char_index, x, y, val)
+
+    def _export_bin(self):
+        path, _ = QFileDialog.getSaveFileName(self, "Export Charset", "", "Binary Files (*.bin *.chr)")
+        if path:
+            with open(path, 'wb') as f:
+                f.write(self.charset.to_bytes())
+
+    def _import_bin(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Import Charset", "", "Binary Files (*.bin *.chr)")
+        if path:
+            with open(path, 'rb') as f:
+                data = f.read()
+                self.charset.from_bytes(data)
+            self._char_selected(self.current_char_index)

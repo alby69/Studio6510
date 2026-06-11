@@ -16,19 +16,19 @@
 - [x] Pixel grid drawing.
 - [x] Palette management (C64 colors).
 - [x] Multicolor/Single color toggle (UI + Model).
-- [ ] Animation preview.
+- [x] Animation preview (UI + Timer logic).
 - [x] Export to ASM (Basic Data blocks).
 
 ## Phase 4: Graphics Suite - Charset Editor
 - [x] 8x8 character editing.
-- [ ] Import/Export from/to binary and ASM.
+- [x] Import/Export from/to binary and ASM.
 
 ## Phase 5: Map & Screen Designer
 - [x] Tile creation from Charset (Model).
 - [x] Map painting (Basic grid painting).
-- [ ] Screen layout tool.
+- [x] Screen layout tool (Basic Screen Designer).
 
 ## Phase 6: Advanced Features
 - [ ] Debugger integration (VICE remote monitor).
 - [ ] Git integration.
-- [ ] Plugin API.
+- [x] Plugin API (Plugin Manager + Loading logic).

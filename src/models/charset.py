@@ -12,3 +12,25 @@ class Charset:
         if 0 <= char_index < 256 and 0 <= x < 8 and 0 <= y < 8:
             return self.chars[char_index][y * 8 + x]
         return 0
+
+    def to_bytes(self):
+        # Convert to 2048 bytes (256 * 8)
+        output = bytearray()
+        for char in self.chars:
+            for row in range(8):
+                byte_val = 0
+                for col in range(8):
+                    if char[row * 8 + col] > 0:
+                        byte_val |= (1 << (7 - col))
+                output.append(byte_val)
+        return output
+
+    def from_bytes(self, data):
+        if len(data) < 2048:
+            return
+        for i in range(256):
+            for row in range(8):
+                byte_val = data[i * 8 + row]
+                for col in range(8):
+                    pixel_val = 1 if (byte_val & (1 << (7 - col))) else 0
+                    self.chars[i][row * 8 + col] = pixel_val

@@ -3,6 +3,7 @@ from PySide6.QtCore import Qt
 from ui.dock_widgets.project_explorer import ProjectExplorer
 from core.project import Project
 from core.settings import Settings
+from core.plugin_manager import PluginManager
 from editors.asm_editor import ASMEditor
 from compilers.kick_assembler import KickAssembler
 from emulators.vice import Vice
@@ -18,6 +19,7 @@ class MainWindow(QMainWindow):
 
     def _setup_ui(self):
         self.settings = Settings()
+        self.plugin_manager = PluginManager()
         self.current_project = None
         # Menu Bar
         self.menu_bar = self.menuBar()
@@ -56,6 +58,9 @@ class MainWindow(QMainWindow):
         # Status Bar
         self.setStatusBar(QStatusBar())
         self.statusBar().showMessage("Ready")
+
+        # Load Plugins
+        self.plugin_manager.load_plugins(self)
 
     def _create_docks(self):
         # Project Explorer
