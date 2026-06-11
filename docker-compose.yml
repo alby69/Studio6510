@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  c64studio:
+    build: .
+    container_name: c64studio-py
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - .:/app
+      - ~/.c64studiopy.json:/root/.c64studiopy.json
+    privileged: true

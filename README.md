@@ -20,7 +20,18 @@ Documentation can be found in the `docs/` folder:
 - PyYAML
 
 ## Setup
+
+### Local Setup
 ```bash
 pip install -r requirements.txt
 python src/main.py
 ```
+
+### Docker Setup
+To run the IDE inside a Docker container (requires an X11 server on the host):
+
+```bash
+docker-compose up --build
+```
+
+On Linux, you might need to run `xhost +local:docker` before starting the container to allow access to the X server.
