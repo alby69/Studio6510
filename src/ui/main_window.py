@@ -1,9 +1,12 @@
 from PySide6.QtWidgets import QMainWindow, QDockWidget, QTextEdit, QStatusBar, QMenuBar, QFileDialog, QTabWidget
 from PySide6.QtCore import Qt
 from ui.dock_widgets.project_explorer import ProjectExplorer
+from ui.dock_widgets.debugger_window import DebuggerWindow
+from ui.dock_widgets.git_pane import GitPane
 from core.project import Project
 from core.settings import Settings
 from core.plugin_manager import PluginManager
+from core.debugger import VICEDebugger
 from editors.asm_editor import ASMEditor
 from compilers.kick_assembler import KickAssembler
 from emulators.vice import Vice
@@ -20,6 +23,7 @@ class MainWindow(QMainWindow):
     def _setup_ui(self):
         self.settings = Settings()
         self.plugin_manager = PluginManager()
+        self.debugger = VICEDebugger()
         self.current_project = None
         # Menu Bar
         self.menu_bar = self.menuBar()
@@ -48,6 +52,11 @@ class MainWindow(QMainWindow):
 
         help_menu = self.menu_bar.addMenu("&Help")
 
+        git_menu = self.menu_bar.addMenu("&Git")
+        show_git_action = git_menu.addAction("Show Git Pane")
+        show_git_action.triggered.connect(lambda: self.git_dock.show())
+        git_menu.addAction("Refresh").triggered.connect(lambda: self.git_pane.refresh())
+
         # Central Widget (Tabbed Editors)
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
@@ -65,6 +74,21 @@ class MainWindow(QMainWindow):
         self.plugin_manager.load_plugins(self)
 
     def _create_docks(self):
+        # Git Pane
+        self.git_dock = QDockWidget("Git", self)
+        self.git_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.git_pane = GitPane(os.getcwd(), self)
+        self.git_dock.setWidget(self.git_pane)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.git_dock)
+        self.git_dock.hide() # Hide by default
+
+        # Debugger
+        self.debugger_dock = QDockWidget("Debugger", self)
+        self.debugger_dock.setAllowedAreas(Qt.BottomDockWidgetArea | Qt.RightDockWidgetArea)
+        self.debugger_window = DebuggerWindow(self.debugger, self)
+        self.debugger_dock.setWidget(self.debugger_window)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.debugger_dock)
+
         # Project Explorer
         self.project_dock = QDockWidget("Project Explorer", self)
         self.project_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
@@ -93,9 +117,12 @@ class MainWindow(QMainWindow):
 
         # Attempt to run a placeholder or the last compiled PRG
         emulator = Vice(vice_bin)
-        success, msg = emulator.run("main.prg")
+        success, msg = emulator.run("main.prg", debug=True)
         if success:
             self.output_window.append(f"VICE started: {msg}")
+            # Automatically try to connect debugger after a short delay
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(1000, self.debugger.connect)
         else:
             self.output_window.append(f"Failed to start VICE: {msg}")
 
@@ -138,6 +165,8 @@ class MainWindow(QMainWindow):
         if file_path:
             self.current_project = Project.load(file_path)
             self.project_explorer.set_project_path(self.current_project.path)
+            self.git_pane.set_repo_path(self.current_project.path)
+            self.git_pane.refresh()
             self.statusBar().showMessage(f"Project Loaded: {self.current_project.name}")
 
     def open_file(self, file_path):

@@ -1,12 +1,6 @@
 from PySide6.QtWidgets import QWidget, QGridLayout, QPushButton, QButtonGroup
 from PySide6.QtCore import Signal, QSize
-
-C64_PALETTE = [
-    "#000000", "#FFFFFF", "#880000", "#AAFFEE",
-    "#CC44CC", "#00CC55", "#0000AA", "#EEEE77",
-    "#DD8855", "#664400", "#FF7777", "#333333",
-    "#777777", "#AAFF66", "#0088FF", "#BBBBBB"
-]
+from utils.colors import C64_PALETTE_HEX as C64_PALETTE
 
 class PaletteWidget(QWidget):
     colorSelected = Signal(int)

@@ -38,7 +38,7 @@ class MapEditor(QGraphicsView):
 
     def _update_cell(self, x, y):
         from PySide6.QtGui import QPixmap, QImage, QColor
-        from ui.widgets.pixel_editor import C64_PALETTE
+        from utils.colors import C64_PALETTE_HEX as C64_PALETTE
 
         char_idx = self.map_model.data[y][x]
 

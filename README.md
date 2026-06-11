@@ -8,6 +8,9 @@ Inspired by CBM Prg Studio, this project aims to provide a complete suite of too
 - Sprite, Charset, and Map editors.
 - Build system integration (KickAssembler).
 - Emulator integration (VICE).
+- Integrated Debugger (via VICE Remote Monitor).
+- Git integration for project management.
+- Plugin system for extensibility.
 
 ## Documentation
 Documentation can be found in the `docs/` folder:

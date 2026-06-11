@@ -64,7 +64,7 @@ class SpriteEditorMain(QWidget):
 
     def _update_preview(self):
         from PySide6.QtGui import QPixmap, QImage, QColor
-        from editors.sprite_editor import C64_PALETTE
+        from utils.colors import C64_PALETTE_HEX as C64_PALETTE
 
         img = QImage(24, 21, QImage.Format_RGB32)
         for y in range(21):

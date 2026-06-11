@@ -29,6 +29,6 @@
 - [x] Screen layout tool (Basic Screen Designer).
 
 ## Phase 6: Advanced Features
-- [ ] Debugger integration (VICE remote monitor).
-- [ ] Git integration.
+- [x] Debugger integration (VICE remote monitor).
+- [x] Git integration.
 - [x] Plugin API (Plugin Manager + Loading logic).
