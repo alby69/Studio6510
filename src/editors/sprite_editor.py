@@ -50,7 +50,16 @@ class SpriteEditor(QGraphicsView):
         y = int(pos.y() // self.pixel_size)
 
         if 0 <= x < self.sprite.width and 0 <= y < self.sprite.height:
-            self.sprite.set_pixel(x, y, self.current_color)
-            color = QColor(C64_PALETTE[self.sprite.colors[self.current_color]])
-            self._rects[y][x].setBrush(QBrush(color))
+            if self.sprite.multicolor:
+                x = (x // 2) * 2
+                self.sprite.set_pixel(x, y, self.current_color)
+                self.sprite.set_pixel(x+1, y, self.current_color)
+                color = QColor(C64_PALETTE[self.sprite.colors[self.current_color % 4]])
+                self._rects[y][x].setBrush(QBrush(color))
+                self._rects[y][x+1].setBrush(QBrush(color))
+            else:
+                self.sprite.set_pixel(x, y, self.current_color)
+                color = QColor(C64_PALETTE[self.sprite.colors[self.current_color % 2]])
+                self._rects[y][x].setBrush(QBrush(color))
+
             self.pixelChanged.emit(x, y, self.current_color)

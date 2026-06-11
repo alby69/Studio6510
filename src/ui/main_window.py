@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QMainWindow, QDockWidget, QTextEdit, QStatusBar, QMenuBar, QFileDialog
+from PySide6.QtWidgets import QMainWindow, QDockWidget, QTextEdit, QStatusBar, QMenuBar, QFileDialog, QTabWidget
 from PySide6.QtCore import Qt
 from ui.dock_widgets.project_explorer import ProjectExplorer
 from core.project import Project
@@ -48,9 +48,11 @@ class MainWindow(QMainWindow):
 
         help_menu = self.menu_bar.addMenu("&Help")
 
-        # Central Widget (Editors go here)
-        self.asm_editor = ASMEditor()
-        self.setCentralWidget(self.asm_editor)
+        # Central Widget (Tabbed Editors)
+        self.tabs = QTabWidget()
+        self.tabs.setTabsClosable(True)
+        self.tabs.tabCloseRequested.connect(self._close_tab)
+        self.setCentralWidget(self.tabs)
 
         # Dock Widgets
         self._create_docks()
@@ -101,6 +103,13 @@ class MainWindow(QMainWindow):
         self.output_window.clear()
         self.output_window.append("Building...")
 
+        # Save current tab if it's an ASM editor
+        current_widget = self.tabs.currentWidget()
+        current_file = self.tabs.tabToolTip(self.tabs.currentIndex())
+        if isinstance(current_widget, ASMEditor) and current_file:
+            with open(current_file, 'w') as f:
+                f.write(current_widget.text())
+
         kickass_path = self.settings.get("kickass_jar")
         if not kickass_path or not os.path.exists(kickass_path):
             self.output_window.append("Error: KickAssembler JAR not set or not found. Please check Settings.")
@@ -108,9 +117,7 @@ class MainWindow(QMainWindow):
 
         compiler = KickAssembler(kickass_path)
 
-        # Save current file to a temporary ASM and compile
-        # For now we use a hardcoded source name if no project file is selected
-        source_file = "main.asm"
+        source_file = current_file or "main.asm"
         if not os.path.exists(source_file):
             with open(source_file, "w") as f:
                 f.write("*=$0801\n.byte $0c,$08,$0a,$00,$9e,$20,$32,$30,$36,$32,$00,$00,$00\n*=$0810\ninc $d020\njmp $0810")
@@ -123,9 +130,48 @@ class MainWindow(QMainWindow):
         else:
             self.output_window.append("Build Failed.")
 
+    def _close_tab(self, index):
+        self.tabs.removeTab(index)
+
     def _open_project(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Open Project", "", "C64 Project (*.c64proj)")
         if file_path:
             self.current_project = Project.load(file_path)
             self.project_explorer.set_project_path(self.current_project.path)
             self.statusBar().showMessage(f"Project Loaded: {self.current_project.name}")
+
+    def open_file(self, file_path):
+        # Determine editor type by extension
+        ext = os.path.splitext(file_path)[1].lower()
+
+        # Check if already open
+        for i in range(self.tabs.count()):
+            if self.tabs.tabToolTip(i) == file_path:
+                self.tabs.setCurrentIndex(i)
+                return
+
+        editor = None
+        if ext in ['.asm', '.txt', '.s']:
+            editor = ASMEditor()
+            with open(file_path, 'r') as f:
+                editor.set_text(f.read())
+        elif ext in ['.bas']:
+            editor = ASMEditor() # Use same for now
+            with open(file_path, 'r') as f:
+                editor.set_text(f.read())
+        elif ext in ['.spright', '.spr']:
+            from editors.sprite_editor_main import SpriteEditorMain
+            editor = SpriteEditorMain()
+            # Sprite loading logic could be added here
+        elif ext in ['.chr', '.bin']:
+            from editors.charset_editor import CharsetEditor
+            editor = CharsetEditor()
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as f:
+                    editor.charset.from_bytes(f.read())
+                editor._char_selected(0)
+
+        if editor:
+            index = self.tabs.addTab(editor, os.path.basename(file_path))
+            self.tabs.setTabToolTip(index, file_path)
+            self.tabs.setCurrentIndex(index)
