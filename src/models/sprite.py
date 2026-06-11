@@ -16,11 +16,23 @@ class Sprite:
         return 0
 
     def to_asm(self):
-        # Convert sprite data to KickAss / ACME bytes
-        # This is a simplified version
+        # Convert sprite data to KickAss bytes
         asm = "; Sprite Data\n"
         for y in range(self.height):
-            byte_val = 0
-            # Logic to pack bits into bytes based on multicolor/singlecolor
-            # ...
+            asm += "    .byte "
+            bytes_row = []
+            for b in range(3): # 3 bytes per row (24 pixels)
+                byte_val = 0
+                for bit in range(8):
+                    pixel_x = b * 8 + bit
+                    pixel_val = self.get_pixel(pixel_x, y)
+                    if self.multicolor:
+                        # In multicolor, 2 bits per pixel
+                        # This logic needs refinement but for now:
+                        pass
+                    else:
+                        if pixel_val > 0:
+                            byte_val |= (1 << (7 - bit))
+                bytes_row.append(f"${byte_val:02x}")
+            asm += ", ".join(bytes_row) + "\n"
         return asm

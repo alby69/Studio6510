@@ -2,8 +2,11 @@ from PySide6.QtWidgets import QMainWindow, QDockWidget, QTextEdit, QStatusBar, Q
 from PySide6.QtCore import Qt
 from ui.dock_widgets.project_explorer import ProjectExplorer
 from core.project import Project
+from core.settings import Settings
 from editors.asm_editor import ASMEditor
 from compilers.kick_assembler import KickAssembler
+from emulators.vice import Vice
+from ui.widgets.settings_dialog import SettingsDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -14,6 +17,7 @@ class MainWindow(QMainWindow):
         self._setup_ui()
 
     def _setup_ui(self):
+        self.settings = Settings()
         self.current_project = None
         # Menu Bar
         self.menu_bar = self.menuBar()
@@ -31,6 +35,14 @@ class MainWindow(QMainWindow):
         build_action = tools_menu.addAction("Build")
         build_action.setShortcut("Ctrl+B")
         build_action.triggered.connect(self._build_project)
+
+        run_action = tools_menu.addAction("Run")
+        run_action.setShortcut("F5")
+        run_action.triggered.connect(self._run_project)
+
+        tools_menu.addSeparator()
+        settings_action = tools_menu.addAction("Settings...")
+        settings_action.triggered.connect(self._open_settings)
 
         help_menu = self.menu_bar.addMenu("&Help")
 
@@ -61,17 +73,50 @@ class MainWindow(QMainWindow):
         self.output_dock.setWidget(self.output_window)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.output_dock)
 
+    def _open_settings(self):
+        dlg = SettingsDialog(self.settings, self)
+        dlg.exec()
+
+    def _run_project(self):
+        self.output_window.append("Launching VICE...")
+        vice_bin = self.settings.get("vice_bin")
+        if not vice_bin:
+            self.output_window.append("Error: VICE executable not set. Please check Settings.")
+            return
+
+        # Attempt to run a placeholder or the last compiled PRG
+        emulator = Vice(vice_bin)
+        success, msg = emulator.run("main.prg")
+        if success:
+            self.output_window.append(f"VICE started: {msg}")
+        else:
+            self.output_window.append(f"Failed to start VICE: {msg}")
+
     def _build_project(self):
         self.output_window.clear()
         self.output_window.append("Building...")
 
-        # Placeholder for actual build logic
-        kickass_path = "KickAss.jar" # Should come from settings
+        kickass_path = self.settings.get("kickass_jar")
+        if not kickass_path or not os.path.exists(kickass_path):
+            self.output_window.append("Error: KickAssembler JAR not set or not found. Please check Settings.")
+            return
+
         compiler = KickAssembler(kickass_path)
 
-        # Assume we are editing a file that needs compilation
-        self.output_window.append("Executing: java -jar KickAss.jar ...")
-        self.output_window.append("Error: KickAss.jar not found (this is expected in the skeleton)")
+        # Save current file to a temporary ASM and compile
+        # For now we use a hardcoded source name if no project file is selected
+        source_file = "main.asm"
+        if not os.path.exists(source_file):
+            with open(source_file, "w") as f:
+                f.write("*=$0801\n.byte $0c,$08,$0a,$00,$9e,$20,$32,$30,$36,$32,$00,$00,$00\n*=$0810\ninc $d020\njmp $0810")
+
+        result = compiler.compile(source_file)
+        self.output_window.append(result.get("stdout", ""))
+        self.output_window.append(result.get("stderr", ""))
+        if result["success"]:
+            self.output_window.append("Build Successful.")
+        else:
+            self.output_window.append("Build Failed.")
 
     def _open_project(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Open Project", "", "C64 Project (*.c64proj)")
